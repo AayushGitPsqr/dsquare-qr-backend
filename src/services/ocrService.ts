@@ -36,6 +36,10 @@ async function downloadImageToTemp(imageUrl: string): Promise<string> {
  * Get the actual file path - download from URL if needed
  */
 async function getImagePath(imagePath: string): Promise<string> {
+  if (typeof imagePath !== "string" || !imagePath.trim()) {
+    throw new Error("Image path is required for OCR processing.");
+  }
+
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
     return await downloadImageToTemp(imagePath);
   }

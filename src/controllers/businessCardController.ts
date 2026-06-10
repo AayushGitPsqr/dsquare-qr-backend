@@ -15,9 +15,18 @@ export const scanCard = asyncHandler(async (req: Request, res: Response) => {
     return sendError(res, "Image is required.", 400);
   }
 
-  // Prefer the OCR-optimized Cloudinary URL if available, otherwise fall back
-  // to the secure_url or direct url provided by the upload middleware.
-  const cardImageUrl = file.optimizedUrl || file.secure_url || file.url;
+  // multer-storage-cloudinary exposes the uploaded asset at `path` and `filename`.
+  // We also keep the enhancement middleware fallback fields for compatibility.
+  const cardImageUrl =
+    file.optimizedUrl ||
+    file.path ||
+    file.secure_url ||
+    file.secureUrl ||
+    file.url;
+
+  if (typeof cardImageUrl !== "string" || !cardImageUrl.trim()) {
+    return sendError(res, "Uploaded image URL is unavailable.", 400);
+  }
   
   const result = await scanBusinessCard(cardImageUrl);
   

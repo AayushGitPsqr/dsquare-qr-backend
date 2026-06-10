@@ -44,6 +44,10 @@ async function downloadImageToTemp(imageUrl: string): Promise<string> {
  * Get image data URL - use remote URL directly if available, otherwise convert local file to base64
  */
 async function getImageUrl(imagePath: string): Promise<{ url: string; isTemp?: string }> {
+  if (typeof imagePath !== "string" || !imagePath.trim()) {
+    throw new Error("Image path is required for OpenAI card extraction.");
+  }
+
   // If it's already a URL, use it directly
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
     return { url: imagePath };
