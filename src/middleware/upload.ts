@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import multer from "multer";
 import { env } from "../config/env.js";
+import { enhanceUploadedImage } from "./imageEnhancement.js";
 
 const uploadRoot = path.resolve(env.uploadDir);
 fs.mkdirSync(uploadRoot, { recursive: true });
@@ -28,3 +29,5 @@ export const uploadCardImage = multer({
     cb(new Error("Invalid image type. Use JPG, JPEG, or PNG."));
   }
 });
+
+export { enhanceUploadedImage };

@@ -27,5 +27,11 @@ export const env = {
   mistralApiKey: process.env.MISTRAL_API_KEY ?? "",
   googleVisionApiKey: process.env.GOOGLE_VISION_API_KEY ?? "",
   azureVisionEndpoint: process.env.AZURE_VISION_ENDPOINT ?? "",
-  azureVisionKey: process.env.AZURE_VISION_KEY ?? ""
+  azureVisionKey: process.env.AZURE_VISION_KEY ?? "",
+  // Image Enhancement Settings
+  imageEnhancementEnabled: process.env.IMAGE_ENHANCEMENT_ENABLED === "true",
+  imageEnhancementQuality: Number(process.env.IMAGE_ENHANCEMENT_QUALITY ?? 90),
+  imageEnhancementBrightness: Number(process.env.IMAGE_ENHANCEMENT_BRIGHTNESS ?? 10),
+  imageEnhancementContrast: Number(process.env.IMAGE_ENHANCEMENT_CONTRAST ?? 20),
+  imageEnhancementSharpen: process.env.IMAGE_ENHANCEMENT_SHARPEN !== "false"
 };
