@@ -15,8 +15,9 @@ export const scanCard = asyncHandler(async (req: Request, res: Response) => {
     return sendError(res, "Image is required.", 400);
   }
 
-  // For Cloudinary uploads, use the secure_url
-  const cardImageUrl = file.secure_url || file.url;
+  // Prefer the OCR-optimized Cloudinary URL if available, otherwise fall back
+  // to the secure_url or direct url provided by the upload middleware.
+  const cardImageUrl = file.optimizedUrl || file.secure_url || file.url;
   
   const result = await scanBusinessCard(cardImageUrl);
   
