@@ -8,21 +8,24 @@ import {
   saveBusinessCard,
   scanBusinessCard
 } from "../services/businessCardService.js";
-import { env } from "../config/env.js";
 
 export const scanCard = asyncHandler(async (req: Request, res: Response) => {
-  const file = req.file;
+  const file = req.file as any;
   if (!file) {
     return sendError(res, "Image is required.", 400);
   }
 
-  const result = await scanBusinessCard(file.path);
-  const publicImageUrl = `${env.uploadsServePath}/${file.filename}`;
+  // For Cloudinary uploads, use the secure_url
+  const cardImageUrl = file.secure_url || file.url;
+  
+  const result = await scanBusinessCard(cardImageUrl);
+  
   return sendSuccess(res, "Card scanned successfully", {
     ...result.parsed,
     rawText: result.rawText,
     provider: result.provider,
-    cardImage: publicImageUrl
+    cardImage: cardImageUrl,
+    cloudinaryPublicId: file.public_id
   });
 });
 

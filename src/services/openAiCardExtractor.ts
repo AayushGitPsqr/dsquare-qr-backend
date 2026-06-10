@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import axios from "axios";
+import os from "node:os";
 import { env } from "../config/env.js";
 import type { BusinessCardDocument } from "../models/BusinessCard.js";
 
@@ -17,6 +19,42 @@ function guessMimeType(imagePath: string) {
   if (extension === ".png") return "image/png";
   if (extension === ".webp") return "image/webp";
   return "image/jpeg";
+}
+
+/**
+ * Download image from URL to a temporary file
+ */
+async function downloadImageToTemp(imageUrl: string): Promise<string> {
+  try {
+    const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
+    const tempDir = os.tmpdir();
+    const tempFileName = `card-${Date.now()}.jpg`;
+    const tempPath = path.join(tempDir, tempFileName);
+    
+    await fs.writeFile(tempPath, Buffer.from(response.data));
+    return tempPath;
+  } catch (error) {
+    throw new Error(
+      `Failed to download image from URL: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+/**
+ * Get image data URL - use remote URL directly if available, otherwise convert local file to base64
+ */
+async function getImageUrl(imagePath: string): Promise<{ url: string; isTemp?: string }> {
+  // If it's already a URL, use it directly
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return { url: imagePath };
+  }
+
+  // Convert local file to data URL
+  const imageBuffer = await fs.readFile(imagePath);
+  const imageBase64 = imageBuffer.toString("base64");
+  const dataUrl = `data:${guessMimeType(imagePath)};base64,${imageBase64}`;
+  
+  return { url: dataUrl };
 }
 
 function normalizeNullableString(value: unknown) {
@@ -48,9 +86,7 @@ export async function extractBusinessCardWithOpenAI(
     return null;
   }
 
-  const imageBuffer = await fs.readFile(imagePath);
-  const imageBase64 = imageBuffer.toString("base64");
-  const imageUrl = `data:${guessMimeType(imagePath)};base64,${imageBase64}`;
+  const { url: imageUrl } = await getImageUrl(imagePath);
 
   const response = await fetch(env.llmApiUrl, {
     method: "POST",

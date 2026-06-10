@@ -2,6 +2,7 @@ import { createWorker } from "tesseract.js";
 import axios from "axios";
 import fs from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { env } from "../config/env.js";
 import { logInfo, logWarn } from "../utils/logger.js";
 
@@ -10,16 +11,56 @@ type OcrResult = {
   provider: string;
 };
 
+/**
+ * Download image from URL to a temporary file
+ */
+async function downloadImageToTemp(imageUrl: string): Promise<string> {
+  try {
+    const response = await axios.get(imageUrl, { responseType: "arraybuffer" });
+    const tempDir = os.tmpdir();
+    const tempFileName = `card-${Date.now()}.jpg`;
+    const tempPath = path.join(tempDir, tempFileName);
+    
+    await fs.writeFile(tempPath, Buffer.from(response.data));
+    logInfo(`Downloaded image from URL to temporary file: ${tempPath}`);
+    
+    return tempPath;
+  } catch (error) {
+    throw new Error(
+      `Failed to download image from URL: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+/**
+ * Get the actual file path - download from URL if needed
+ */
+async function getImagePath(imagePath: string): Promise<string> {
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+    return await downloadImageToTemp(imagePath);
+  }
+  return imagePath;
+}
+
 async function runTesseract(imagePath: string): Promise<OcrResult> {
+  const actualPath = await getImagePath(imagePath);
   const worker = await createWorker("eng");
   try {
-    const result = await worker.recognize(imagePath);
+    const result = await worker.recognize(actualPath);
     return {
       text: result.data.text ?? "",
       provider: "tesseract"
     };
   } finally {
     await worker.terminate();
+    // Clean up temp file if it was downloaded
+    if (imagePath.startsWith("http")) {
+      try {
+        await fs.unlink(actualPath);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
   }
 }
 
@@ -35,9 +76,10 @@ async function runMistral(imagePath: string): Promise<OcrResult> {
     throw new Error("MISTRAL_API_KEY is required when OCR_PROVIDER=mistral.");
   }
 
-  const fileBuffer = await fs.readFile(imagePath);
+  const actualPath = await getImagePath(imagePath);
+  const fileBuffer = await fs.readFile(actualPath);
   const imageBase64 = fileBuffer.toString("base64");
-  const dataUrl = `data:${guessMimeType(imagePath)};base64,${imageBase64}`;
+  const dataUrl = `data:${guessMimeType(actualPath)};base64,${imageBase64}`;
 
   const response = await fetch("https://api.mistral.ai/v1/ocr", {
     method: "POST",
@@ -73,6 +115,15 @@ async function runMistral(imagePath: string): Promise<OcrResult> {
       .filter(Boolean)
       .join("\n\n") ?? "";
 
+  // Clean up temp file if it was downloaded
+  if (imagePath.startsWith("http")) {
+    try {
+      await fs.unlink(actualPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+
   return {
     text,
     provider: "mistral"
@@ -80,8 +131,9 @@ async function runMistral(imagePath: string): Promise<OcrResult> {
 }
 
 async function runGoogleVision(imagePath: string): Promise<OcrResult> {
+  const actualPath = await getImagePath(imagePath);
   const image = await import("node:fs/promises").then((fs) =>
-    fs.readFile(imagePath, { encoding: "base64" })
+    fs.readFile(actualPath, { encoding: "base64" })
   );
 
   const response = await axios.post(
@@ -96,6 +148,15 @@ async function runGoogleVision(imagePath: string): Promise<OcrResult> {
     }
   );
 
+  // Clean up temp file if it was downloaded
+  if (imagePath.startsWith("http")) {
+    try {
+      await fs.unlink(actualPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
+
   const text =
     response.data?.responses?.[0]?.fullTextAnnotation?.text ??
     response.data?.responses?.[0]?.textAnnotations?.[0]?.description ??
@@ -105,8 +166,9 @@ async function runGoogleVision(imagePath: string): Promise<OcrResult> {
 }
 
 async function runAzureVision(imagePath: string): Promise<OcrResult> {
+  const actualPath = await getImagePath(imagePath);
   const image = await import("node:fs/promises").then((fs) =>
-    fs.readFile(imagePath)
+    fs.readFile(actualPath)
   );
 
   const response = await axios.post(
@@ -142,6 +204,15 @@ async function runAzureVision(imagePath: string): Promise<OcrResult> {
           )
           .filter(Boolean)
           .join("\n") ?? "";
+    }
+  }
+
+  // Clean up temp file if it was downloaded
+  if (imagePath.startsWith("http")) {
+    try {
+      await fs.unlink(actualPath);
+    } catch {
+      // Ignore cleanup errors
     }
   }
 

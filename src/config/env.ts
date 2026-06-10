@@ -17,16 +17,9 @@ function required(name: string, fallback?: string) {
   return value;
 }
 
-const rawUploadDir = process.env.UPLOAD_DIR ?? "uploads/cards";
-const uploadDir = path.isAbsolute(rawUploadDir)
-  ? rawUploadDir
-  : path.resolve(projectRoot, rawUploadDir);
-
 export const env = {
   port: Number(process.env.PORT ?? 4000),
   mongoUri: required("MONGODB_URI", "mongodb://127.0.0.1:27017/dsquare"),
-  uploadDir,
-  uploadsServePath: process.env.UPLOADS_SERVE_PATH ?? "/uploads",
   frontendOrigins: (process.env.FRONTEND_ORIGINS ?? "http://localhost:3000,http://172.28.80.1:3000")
     .split(",")
     .map((origin) => origin.trim())
@@ -41,6 +34,11 @@ export const env = {
   googleVisionApiKey: process.env.GOOGLE_VISION_API_KEY ?? "",
   azureVisionEndpoint: process.env.AZURE_VISION_ENDPOINT ?? "",
   azureVisionKey: process.env.AZURE_VISION_KEY ?? "",
+  // Cloudinary Configuration
+  cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME ?? "",
+  cloudinaryApiKey: process.env.CLOUDINARY_API_KEY ?? "",
+  cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET ?? "",
+  cloudinaryFolder: process.env.CLOUDINARY_FOLDER ?? "business-cards",
   // Image Enhancement Settings
   imageEnhancementEnabled: process.env.IMAGE_ENHANCEMENT_ENABLED === "true",
   imageEnhancementQuality: Number(process.env.IMAGE_ENHANCEMENT_QUALITY ?? 90),

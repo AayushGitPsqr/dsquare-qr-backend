@@ -1,10 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { enhanceImageForOCR } from "../services/imageEnhancementService.js";
 import { env } from "../config/env.js";
 import { logInfo } from "../utils/logger.js";
+import { getOcrOptimizedUrl } from "../services/cloudinaryService.js";
 
 /**
  * Middleware to enhance uploaded image for better OCR quality
+ * For Cloudinary uploads, this applies transformations via Cloudinary API
  * Should be used after multer upload middleware
  */
 export async function enhanceUploadedImage(
@@ -24,19 +25,22 @@ export async function enhanceUploadedImage(
       return;
     }
 
-    const imagePath = req.file.path;
-    logInfo(`Starting image enhancement for: ${req.file.originalname}`);
-
-    // Enhance the image
-    await enhanceImageForOCR(imagePath, {
-      enabled: env.imageEnhancementEnabled,
-      quality: env.imageEnhancementQuality,
-      brightness: env.imageEnhancementBrightness,
-      contrast: env.imageEnhancementContrast,
-      sharpen: env.imageEnhancementSharpen
-    });
-
-    logInfo(`Image enhancement completed for: ${req.file.originalname}`);
+    const file = req.file as any;
+    
+    // For Cloudinary uploads, store the optimized URL
+    if (file.public_id) {
+      logInfo(`Applying OCR optimization for Cloudinary image: ${file.public_id}`);
+      
+      // Get the OCR-optimized URL with Cloudinary transformations
+      const optimizedUrl = getOcrOptimizedUrl(file.public_id);
+      
+      // Store the optimized URL in the file object for use in the controller
+      file.optimizedUrl = optimizedUrl;
+      
+      logInfo(`Image optimization completed for: ${file.originalname}`);
+    } else {
+      logInfo("File enhancement skipped - not a Cloudinary upload");
+    }
 
     // Continue to next middleware/route
     next();
