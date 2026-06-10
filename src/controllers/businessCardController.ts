@@ -8,6 +8,7 @@ import {
   saveBusinessCard,
   scanBusinessCard
 } from "../services/businessCardService.js";
+import { env } from "../config/env.js";
 
 export const scanCard = asyncHandler(async (req: Request, res: Response) => {
   const file = req.file;
@@ -16,7 +17,7 @@ export const scanCard = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const result = await scanBusinessCard(file.path);
-  const publicImageUrl = `/uploads/${file.filename}`;
+  const publicImageUrl = `${env.uploadsServePath}/${file.filename}`;
   return sendSuccess(res, "Card scanned successfully", {
     ...result.parsed,
     rawText: result.rawText,

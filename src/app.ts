@@ -20,7 +20,7 @@ export function createApp() {
   app.use(express.json({ limit: "2mb" }));
   app.use(express.urlencoded({ extended: true }));
   app.use(morgan("dev"));
-  app.use("/uploads", express.static(path.resolve(env.uploadDir)));
+  app.use(env.uploadsServePath, express.static(path.resolve(env.uploadDir)));
 
   app.get("/health", (_req, res) => {
     res.json({

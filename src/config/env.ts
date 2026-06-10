@@ -1,6 +1,13 @@
 import dotenv from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-dotenv.config();
+const projectRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../"
+);
+
+dotenv.config({ path: path.resolve(projectRoot, ".env") });
 
 function required(name: string, fallback?: string) {
   const value = process.env[name] ?? fallback;
@@ -10,10 +17,16 @@ function required(name: string, fallback?: string) {
   return value;
 }
 
+const rawUploadDir = process.env.UPLOAD_DIR ?? "uploads/cards";
+const uploadDir = path.isAbsolute(rawUploadDir)
+  ? rawUploadDir
+  : path.resolve(projectRoot, rawUploadDir);
+
 export const env = {
   port: Number(process.env.PORT ?? 4000),
   mongoUri: required("MONGODB_URI", "mongodb://127.0.0.1:27017/dsquare"),
-  uploadDir: process.env.UPLOAD_DIR ?? "uploads/cards",
+  uploadDir,
+  uploadsServePath: process.env.UPLOADS_SERVE_PATH ?? "/uploads",
   frontendOrigins: (process.env.FRONTEND_ORIGINS ?? "http://localhost:3000,http://172.28.80.1:3000")
     .split(",")
     .map((origin) => origin.trim())
