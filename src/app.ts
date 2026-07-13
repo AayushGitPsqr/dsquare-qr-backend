@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import { env } from "./config/env.js";
 import { businessCardRoutes } from "./routes/businessCardRoutes.js";
+import { clientRequestRoutes } from "./routes/clientRequestRoutes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 export function createApp() {
@@ -28,6 +29,7 @@ export function createApp() {
   });
 
   app.use("/api/cards", businessCardRoutes);
+  app.use("/api/client-requests", clientRequestRoutes);
   app.use(notFoundHandler);
   app.use(errorHandler);
 

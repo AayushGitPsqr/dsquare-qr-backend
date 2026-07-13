@@ -20,7 +20,7 @@ function required(name: string, fallback?: string) {
 export const env = {
   port: Number(process.env.PORT ?? 4000),
   mongoUri: required("MONGODB_URI", "mongodb://127.0.0.1:27017/dsquare"),
-  frontendOrigins: (process.env.FRONTEND_ORIGINS ?? "http://localhost:3000,http://172.28.80.1:3000")
+  frontendOrigins: (process.env.FRONTEND_ORIGINS ?? "http://localhost:3000,http://172.28.80.1:3000,http://localhost:8081")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
